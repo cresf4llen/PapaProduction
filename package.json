@@ -1,0 +1,11 @@
+{
+  "name": "papa-production",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "cd PapaProd && npm run dev",
+    "build": "cd PapaProd && npm run build",
+    "install": "cd PapaProd && npm install",
+    "preview": "cd PapaProd && npm run preview"
+  }
+} 
