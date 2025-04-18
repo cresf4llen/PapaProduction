@@ -5,17 +5,35 @@ import './index.css';
 import video1 from './assets/Snapins.ai_video_AQPjIbxKRDZyaeh6UASDapjMdf9hZCLt-4hs6HJcnVPfJCs8Ed3kSjyRFLL5s_TCVAqKzT9do4nPhdrUp1gXKP76wE7dVnGHQaUgIp8.mp4';
 import video2 from './assets/Snapins.ai_video_AQMJvKybUHwwICnQLLKCWB05er-KJ0t8Y6vqkR3KEVlk-O3r16Lxsf4jz7do2OUFGN5K8gHAD93R0m5BLRA25JLzb97lgvLQJ3j9LSI.mp4';
 import video3 from './assets/Snapins.ai_video_AQNAf-X0R5VhRT8vI3Zf456xdrcxmRQzzhcQ4beWK4GTVYpe72U3OAVgme0IFANLVdtaoS16c70hfZ3NvQBDYK7hQCDEIbWNVvHxCOo.mp4';
+// Import photo assets
+import photo1 from './assets/486827349_1002798388234163_4059944686867970730_n.jpg';
+import photo2 from './assets/491274945_676067771833559_7066320896018580383_n.jpg';
+import photo3 from './assets/490496008_1003695761896568_8322410131066097011_n.jpg';
+import photo4 from './assets/484226484_9397591200362708_8792654812032031085_n.jpg';
+import photo5 from './assets/490992256_675718622079740_9167887760017629774_n.jpg';
+import photo6 from './assets/490980769_1450302986380255_7120733704553065967_n.jpg';
 
 function App() {
   const [loading, setLoading] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [showSoundPopup, setShowSoundPopup] = useState(true);
+  const [isSoundEnabled, setIsSoundEnabled] = useState(false);
+  const videoRefs = useRef([]);
+  const [videosLoaded, setVideosLoaded] = useState(0);
+  const titleRefs = useRef([]);
+  const carouselSectionRef = useRef(null);
+  const [isCarouselVisible, setIsCarouselVisible] = useState(true);
+  const [isPageVisible, setIsPageVisible] = useState(true);
+  const [isSoundPopupMounted, setIsSoundPopupMounted] = useState(false); // Mount/unmount control
+  const [isSoundPopupVisible, setIsSoundPopupVisible] = useState(false); // Visibility control for animation
   
   const realSlidesCount = 3;
   const initialSlideIndex = 1; // Start at the first *real* slide (index 1 in extended array)
   const [currentVisualIndex, setCurrentVisualIndex] = useState(initialSlideIndex);
   const [isTransitioning, setIsTransitioning] = useState(false); // Tracks if CSS transition is active
   const [isLoopingJump, setIsLoopingJump] = useState(false); // Tracks if we are doing the silent jump
+  const [titleVisible, setTitleVisible] = useState(true);
 
   const carouselInnerRef = useRef(null); // Ref for the inner container
 
@@ -34,6 +52,187 @@ function App() {
   ];
 
   const transitionDuration = 800; // Match CSS transition duration
+
+  // Handle video load events
+  const handleVideoLoad = () => {
+    setVideosLoaded(prev => prev + 1);
+  };
+
+  // Pause all videos
+  const pauseAllVideos = () => {
+    videoRefs.current.forEach(videoRef => {
+      if (videoRef && !videoRef.paused) {
+        videoRef.pause();
+      }
+    });
+  };
+
+  // Check if videos should play based on visibility conditions
+  const shouldPlayVideos = () => {
+    return isCarouselVisible && isPageVisible;
+  };
+
+  // Update video playback and audio
+  const updateVideos = () => {
+    // If carousel is not visible or page is not visible, pause all videos
+    if (!shouldPlayVideos()) {
+      pauseAllVideos();
+      return;
+    }
+
+    videoRefs.current.forEach((videoRef, index) => {
+      if (videoRef) {
+        if (index === currentVisualIndex) {
+          // Current video: play and handle audio based on sound preference
+          videoRef.muted = !isSoundEnabled;
+          videoRef.play().catch(e => console.error("Video play failed:", e));
+        } else {
+          // Non-visible videos: pause and mute
+          videoRef.muted = true;
+          videoRef.pause();
+        }
+      }
+    });
+  };
+
+  // Handle enabling sound
+  const enableSound = () => {
+    setIsSoundEnabled(true);
+    setShowSoundPopup(false);
+    
+    // Update the active video to unmute it
+    updateVideos();
+  };
+
+  // Skip sound
+  const skipSound = () => {
+    setShowSoundPopup(false);
+  };
+
+  // Initialize videos
+  const initializeVideos = () => {
+    // Only initialize if carousel is visible and page is visible
+    if (!shouldPlayVideos()) return;
+    
+    videoRefs.current.forEach((videoRef, index) => {
+      if (videoRef) {
+        // Only load and play the current video
+        if (index === currentVisualIndex) {
+          videoRef.muted = !isSoundEnabled;
+          videoRef.play().catch(e => console.error("Video play failed:", e));
+        } else {
+          videoRef.muted = true;
+          videoRef.pause();
+          
+          // Load metadata but don't play
+          if (videoRef.readyState === 0) {
+            videoRef.load();
+          }
+        }
+      }
+    });
+  };
+
+  // Handle page visibility changes
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPageVisible(!document.hidden);
+    };
+
+    // Listen for visibility change events
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  // Update videos when page visibility changes
+  useEffect(() => {
+    updateVideos();
+  }, [isPageVisible]);
+
+  // Set up intersection observer to detect when carousel is visible
+  useEffect(() => {
+    if (!carouselSectionRef.current) return;
+
+    const options = {
+      root: null, // viewport
+      rootMargin: '0px',
+      threshold: 0.1 // 10% visibility is enough to trigger
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        // Update visibility state
+        setIsCarouselVisible(entry.isIntersecting);
+      });
+    }, options);
+
+    observer.observe(carouselSectionRef.current);
+
+    return () => {
+      if (carouselSectionRef.current) {
+        observer.unobserve(carouselSectionRef.current);
+      }
+    };
+  }, [carouselSectionRef.current]);
+
+  // Update videos when carousel visibility changes
+  useEffect(() => {
+    updateVideos();
+  }, [isCarouselVisible]);
+
+  // Update title visibility and transitions
+  const updateTitles = () => {
+    // Calculate the logical slide index for the active title
+    const activeTitleIndex = (currentVisualIndex - 1 + realSlidesCount) % realSlidesCount;
+    
+    titleRefs.current.forEach((titleRef, index) => {
+      if (titleRef) {
+        const isActive = index === currentVisualIndex;
+        if (isActive) {
+          titleRef.classList.add('active-title');
+        } else {
+          titleRef.classList.remove('active-title');
+        }
+      }
+    });
+  };
+
+  useEffect(() => {
+    // Initialize videos after they're rendered
+    if (videoRefs.current.length > 0) {
+      initializeVideos();
+    }
+  }, [videoRefs.current.length]);
+
+  // Handle title transitions before slide changes
+  useEffect(() => {
+    if (isTransitioning) {
+      // Hide title during transitions for smoother experience
+      setTitleVisible(false);
+      
+      // Show title again after transition is complete
+      const timer = setTimeout(() => {
+        setTitleVisible(true);
+      }, transitionDuration * 0.7); // Slightly before transition ends
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isTransitioning]);
+
+  useEffect(() => {
+    // Update videos and titles when slides change
+    // Don't update during looping jumps as this would be invisible
+    if (!isLoopingJump) {
+      updateVideos();
+      
+      if (!isTransitioning) {
+        updateTitles();
+      }
+    }
+  }, [currentVisualIndex, isTransitioning, isSoundEnabled, isLoopingJump]);
 
   useEffect(() => {
     // Reset transition state after the CSS transition completes
@@ -56,14 +255,17 @@ function App() {
   }, [isTransitioning, currentVisualIndex, isLoopingJump]);
   
   useEffect(() => {
-      // Remove the no-transition class shortly after a jump to re-enable transitions
-      if (isLoopingJump) {
-          const timer = setTimeout(() => {
-              setIsLoopingJump(false)
-          }, 50); // Short delay to allow browser to render the jump
-          return () => clearTimeout(timer)
-      }
-  }, [isLoopingJump])
+    // Remove the no-transition class shortly after a jump to re-enable transitions
+    if (isLoopingJump) {
+      const timer = setTimeout(() => {
+        setIsLoopingJump(false);
+        // Ensure titles and videos are properly updated after loop jumps
+        updateTitles();
+        updateVideos();
+      }, 50); // Short delay to allow browser to render the jump
+      return () => clearTimeout(timer);
+    }
+  }, [isLoopingJump]);
 
   // Handle carousel navigation
   const navigateSlide = (direction) => {
@@ -104,6 +306,36 @@ function App() {
     });
   };
 
+  // Effect to handle popup animation
+  useEffect(() => {
+    const transitionTime = 500; // Match CSS transition duration
+    const visibilityDelay = 50; // Use a small delay for transition triggering
+    let visibleTimer, unmountTimer;
+
+    // Run immediately if showSoundPopup is true
+    if (showSoundPopup) {
+      setIsSoundPopupMounted(true); // Mount immediately
+      // Trigger fade-in animation shortly after mounting
+      visibleTimer = setTimeout(() => {
+        setIsSoundPopupVisible(true);
+      }, visibilityDelay); 
+    } else {
+      // If popup should be hidden initially or dismissed later
+      setIsSoundPopupVisible(false); 
+      // Unmount after the fade-out animation completes
+      unmountTimer = setTimeout(() => {
+        setIsSoundPopupMounted(false);
+      }, transitionTime);
+    }
+
+    // Cleanup timers on unmount or if showSoundPopup changes
+    return () => {
+      clearTimeout(visibleTimer);
+      clearTimeout(unmountTimer);
+    };
+    // Only depend on showSoundPopup now
+  }, [showSoundPopup]);
+
   if (loading) {
     return (
       <div className={`loader ${fadeOut ? 'fade-out' : ''}`}>
@@ -112,19 +344,26 @@ function App() {
       </div>
     );
   }
-  
-  // Calculate the logical slide index for the active title
-  let activeTitleIndex = (currentVisualIndex - 1 + realSlidesCount) % realSlidesCount;
-  if (isLoopingJump) { // Keep title hidden during the jump
-      activeTitleIndex = -1; // Or some value that won't match any index
-  }
 
   return (
     <div className="app fade-in">
       <Header />
       
+      {/* Sound Permission Popup */}
+      {isSoundPopupMounted && (
+        <div className={`sound-popup ${isSoundPopupVisible ? 'visible' : ''}`}>
+          <div className="sound-popup-content">
+            <p>Enable sound for a better experience?</p>
+            <div className="sound-popup-buttons">
+              <button onClick={enableSound} className="btn sound-btn">Enable Sound</button>
+              <button onClick={skipSound} className="btn btn-secondary sound-btn">No Thanks</button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Hero Section - Carousel */}
-      <section id="home" className="hero">
+      <section id="home" className="hero" ref={carouselSectionRef}>
         <div className="carousel-container">
           <div 
             ref={carouselInnerRef}
@@ -138,17 +377,23 @@ function App() {
               >
                 <div className="video-container">
                   <video
+                    ref={el => { videoRefs.current[index] = el }}
                     src={item.videoSrc}
-                    muted
-                    autoPlay
+                    muted={!isSoundEnabled || index !== currentVisualIndex}
+                    autoPlay={index === currentVisualIndex && shouldPlayVideos()}
                     loop
                     playsInline
+                    preload="auto"
+                    onLoadedData={handleVideoLoad}
                     className="video-element"
                   ></video>
                 </div>
                 <div className="overlay"></div>
-                {/* Apply active-title class based on calculated logical index */}
-                <div className={`carousel-title ${index - 1 === activeTitleIndex ? 'active-title' : ''}`}>
+                {/* Improved title handling */}
+                <div 
+                  ref={el => { titleRefs.current[index] = el }}
+                  className={`carousel-title ${index === currentVisualIndex && titleVisible ? 'active-title' : ''}`}
+                >
                   <h2>{item.title}</h2>
                 </div>
               </div>
@@ -164,9 +409,122 @@ function App() {
         </div>
       </section>
       
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       {/* Work/Portfolio Section - Instagram Reels */}
       <section id="work" className="work">
+
+
+
+
+
+
+      <div className="photo-gallery">
+          <h2>Behind the Scenes</h2>
+          <div className="gallery-wrapper">
+            <div className="gallery-grid">
+              <div className="gallery-item featured">
+                <div className="image-container">
+                  <img src={photo2} alt="Production scene 1" />
+                  <div className="image-overlay">
+                    <div className="image-caption">
+                      <h3>On Location Shoot</h3>
+                      <p>Capturing the perfect moment in natural lighting</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="gallery-item">
+                <div className="image-container">
+                  <img src={photo3} alt="Production scene 2" />
+                  <div className="image-overlay">
+                    <div className="image-caption">
+                      <h3>Camera Setup</h3>
+                      <p>Professional equipment for premium quality</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="gallery-item vertical">
+                <div className="image-container">
+                  <img src={photo4} alt="Production scene 3" />
+                  <div className="image-overlay">
+                    <div className="image-caption">
+                      <h3>Director's View</h3>
+                      <p>Creating the perfect composition</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="gallery-item">
+                <div className="image-container">
+                  <img src={photo5} alt="Production scene 4" />
+                  <div className="image-overlay">
+                    <div className="image-caption">
+                      <h3>Lighting Setup</h3>
+                      <p>Crafting the perfect ambiance</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="gallery-item wide">
+                <div className="image-container">
+                  <img src={photo6} alt="Production scene 5" />
+                  <div className="image-overlay">
+                    <div className="image-caption">
+                      <h3>Production Team</h3>
+                      <p>Collaboration brings vision to life</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="gallery-decorative-element left"></div>
+            <div className="gallery-decorative-element right"></div>
+          </div>
+        </div>
+
+
+
+
+
+
+
+
+
+
+
         <h2>Our Work</h2>
+        
+        {/* Featured Project */}
+        {/* <div className="featured-project">
+          <div className="featured-image">
+            <img src={photo4} alt="Featured Project" />
+          </div>
+          <div className="featured-content">
+            <h3>Featured Project</h3>
+            <p>We take pride in delivering exceptional visual content for our clients. Our team combines technical expertise with creative vision to bring your ideas to life.</p>
+          </div>
+        </div> */}
+        
         <div className="instagram-grid">
           {/* Instagram Post 1 */}
           <div className="instagram-post">
@@ -234,6 +592,103 @@ function App() {
               grid-template-columns: 1fr;
             }
           }
+          
+          /* Sound popup styles */
+          .sound-popup {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translate(-50%, 20px); /* Start slightly lower */
+            z-index: 1000;
+            width: auto;
+            max-width: 90%;
+            opacity: 0;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            pointer-events: none;
+          }
+
+          .sound-popup.visible {
+            opacity: 1;
+            transform: translate(-50%, 0);
+            pointer-events: auto;
+          }
+          
+          .sound-popup-content {
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+          }
+          
+          .sound-popup-content p {
+            margin: 0;
+            font-size: 0.9rem;
+          }
+          
+          .sound-popup-buttons {
+            display: flex;
+            gap: 10px;
+          }
+          
+          .sound-btn {
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            cursor: pointer;
+          }
+          
+          .btn-secondary {
+            background-color: #6c757d;
+          }
+          
+          .btn-secondary:hover {
+            background-color: #5a6268;
+          }
+          
+          @media (max-width: 600px) {
+            .sound-popup-content {
+              flex-direction: column;
+              padding: 12px 15px;
+            }
+          }
+          
+          /* Improved title transitions */
+          .carousel-title {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            visibility: hidden;
+            position: absolute;
+            bottom: 100px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            z-index: 5;
+          }
+          
+          .carousel-title.active-title {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+          }
+          
+          .carousel-title h2 {
+            color: white;
+            font-size: 2.5rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            margin: 0;
+            padding: 0 20px;
+          }
+          
+          @media (max-width: 768px) {
+            .carousel-title h2 {
+              font-size: 1.8rem;
+            }
+          }
         `}</style>
       </section>
       
@@ -258,9 +713,75 @@ function App() {
             </p>
           </div>
           <div className="about-image">
-            {/* <img src="/about-image.jpg" alt="Behind the scenes at Papa Production" /> */}
+            <img src={photo1} alt="Papa Production behind the scenes" />
           </div>
         </div>
+
+        {/* Photo Gallery - Behind the Scenes */}
+        {/* <div className="photo-gallery">
+          <h2>Behind the Scenes</h2>
+          <div className="gallery-wrapper">
+            <div className="gallery-grid">
+              <div className="gallery-item featured">
+                <div className="image-container">
+                  <img src={photo2} alt="Production scene 1" />
+                  <div className="image-overlay">
+                    <div className="image-caption">
+                      <h3>On Location Shoot</h3>
+                      <p>Capturing the perfect moment in natural lighting</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="gallery-item">
+                <div className="image-container">
+                  <img src={photo3} alt="Production scene 2" />
+                  <div className="image-overlay">
+                    <div className="image-caption">
+                      <h3>Camera Setup</h3>
+                      <p>Professional equipment for premium quality</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="gallery-item vertical">
+                <div className="image-container">
+                  <img src={photo4} alt="Production scene 3" />
+                  <div className="image-overlay">
+                    <div className="image-caption">
+                      <h3>Director's View</h3>
+                      <p>Creating the perfect composition</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="gallery-item">
+                <div className="image-container">
+                  <img src={photo5} alt="Production scene 4" />
+                  <div className="image-overlay">
+                    <div className="image-caption">
+                      <h3>Lighting Setup</h3>
+                      <p>Crafting the perfect ambiance</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="gallery-item wide">
+                <div className="image-container">
+                  <img src={photo6} alt="Production scene 5" />
+                  <div className="image-overlay">
+                    <div className="image-caption">
+                      <h3>Production Team</h3>
+                      <p>Collaboration brings vision to life</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="gallery-decorative-element left"></div>
+            <div className="gallery-decorative-element right"></div>
+          </div>
+        </div> */}
       </section>
       
       {/* Contact Section */}
