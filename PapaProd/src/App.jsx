@@ -347,7 +347,7 @@ function App() {
 
   return (
     <div className="app fade-in">
-      <Header />
+      <Header isAtCarousel={isCarouselVisible} />
       
       {/* Sound Permission Popup */}
       {isSoundPopupMounted && (
@@ -355,8 +355,8 @@ function App() {
           <div className="sound-popup-content">
             <p>Enable sound for a better experience?</p>
             <div className="sound-popup-buttons">
-              <button onClick={enableSound} className="btn sound-btn">Enable Sound</button>
-              <button onClick={skipSound} className="btn btn-secondary sound-btn">No Thanks</button>
+              <button onClick={enableSound} className="btn sound-btn">Yes</button>
+              <button onClick={skipSound} className="btn btn-secondary sound-btn">No</button>
             </div>
           </div>
         </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './index.css';
 
-function Header() {
+function Header({ isAtCarousel }) {
   const [isOpen, setIsOpen] = useState(false);
   const [visible, setVisible] = useState(true);
   const [prevScrollPos, setPrevScrollPos] = useState(0);
@@ -20,7 +20,13 @@ function Header() {
   }, [prevScrollPos]);
 
   return (
-    <header className={`header ${visible ? 'visible' : 'hidden'}`} style={{ backgroundColor: '#000000' }}>
+    <header 
+      className={`header ${visible ? 'visible' : 'hidden'}`} 
+      style={{ 
+        backgroundColor: isAtCarousel ? 'transparent' : '#000000', 
+        transition: 'background-color 0.6s ease, transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1)'
+      }}
+    >
       <div className="container">
         <div className="logo">
           <h1>PAPA PRODUCTION</h1>
