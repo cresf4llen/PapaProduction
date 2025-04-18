@@ -645,9 +645,20 @@ function App() {
           }
           
           @media (max-width: 600px) {
+            .sound-popup {
+              width: 95%;
+              max-width: 95%;
+            }
+            
             .sound-popup-content {
-              flex-direction: column;
+              flex-direction: row;
+              justify-content: space-between;
+              width: 100%;
               padding: 12px 15px;
+            }
+            
+            .sound-popup-buttons {
+              flex-shrink: 0;
             }
           }
           
