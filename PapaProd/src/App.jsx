@@ -53,6 +53,20 @@ function App() {
 
   const transitionDuration = 800; // Match CSS transition duration
 
+  // Initialize sound preference from sessionStorage
+  useEffect(() => {
+    // Check if user has already made a sound choice in this session
+    const soundChoice = sessionStorage.getItem('soundChoice');
+    const soundEnabled = sessionStorage.getItem('soundEnabled');
+    
+    if (soundChoice === 'made') {
+      // User has already made a choice, don't show popup
+      setShowSoundPopup(false);
+      // Set sound preference based on their previous choice
+      setIsSoundEnabled(soundEnabled === 'true');
+    }
+  }, []);
+
   // Handle video load events
   const handleVideoLoad = () => {
     setVideosLoaded(prev => prev + 1);
@@ -100,6 +114,10 @@ function App() {
     setIsSoundEnabled(true);
     setShowSoundPopup(false);
     
+    // Save the user's preference to sessionStorage
+    sessionStorage.setItem('soundChoice', 'made');
+    sessionStorage.setItem('soundEnabled', 'true');
+    
     // Update the active video to unmute it
     updateVideos();
   };
@@ -107,6 +125,10 @@ function App() {
   // Skip sound
   const skipSound = () => {
     setShowSoundPopup(false);
+    
+    // Save the user's preference to sessionStorage
+    sessionStorage.setItem('soundChoice', 'made');
+    sessionStorage.setItem('soundEnabled', 'false');
   };
 
   // Initialize videos
@@ -136,14 +158,28 @@ function App() {
   // Handle page visibility changes
   useEffect(() => {
     const handleVisibilityChange = () => {
-      setIsPageVisible(!document.hidden);
+      const isVisible = !document.hidden;
+      setIsPageVisible(isVisible);
+      
+      // Immediately pause all videos when tab becomes hidden
+      if (!isVisible) {
+        pauseAllVideos();
+      }
+    };
+
+    // Handle tab/window closing
+    const handleBeforeUnload = () => {
+      pauseAllVideos();
     };
 
     // Listen for visibility change events
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    // Listen for before unload events
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, []);
 
@@ -165,7 +201,13 @@ function App() {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         // Update visibility state
-        setIsCarouselVisible(entry.isIntersecting);
+        const isVisible = entry.isIntersecting;
+        setIsCarouselVisible(isVisible);
+        
+        // Immediately pause videos when scrolled out of view
+        if (!isVisible) {
+          pauseAllVideos();
+        }
       });
     }, options);
 
@@ -409,35 +451,9 @@ function App() {
         </div>
       </section>
       
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       {/* Work/Portfolio Section - Instagram Reels */}
       <section id="work" className="work">
-
-
-
-
-
-
-      <div className="photo-gallery">
+        <div className="photo-gallery">
           <h2>Behind the Scenes</h2>
           <div className="gallery-wrapper">
             <div className="gallery-grid">
@@ -502,28 +518,7 @@ function App() {
           </div>
         </div>
 
-
-
-
-
-
-
-
-
-
-
         <h2>Our Work</h2>
-        
-        {/* Featured Project */}
-        {/* <div className="featured-project">
-          <div className="featured-image">
-            <img src={photo4} alt="Featured Project" />
-          </div>
-          <div className="featured-content">
-            <h3>Featured Project</h3>
-            <p>We take pride in delivering exceptional visual content for our clients. Our team combines technical expertise with creative vision to bring your ideas to life.</p>
-          </div>
-        </div> */}
         
         <div className="instagram-grid">
           {/* Instagram Post 1 */}
@@ -716,72 +711,6 @@ function App() {
             <img src={photo1} alt="Papa Production behind the scenes" />
           </div>
         </div>
-
-        {/* Photo Gallery - Behind the Scenes */}
-        {/* <div className="photo-gallery">
-          <h2>Behind the Scenes</h2>
-          <div className="gallery-wrapper">
-            <div className="gallery-grid">
-              <div className="gallery-item featured">
-                <div className="image-container">
-                  <img src={photo2} alt="Production scene 1" />
-                  <div className="image-overlay">
-                    <div className="image-caption">
-                      <h3>On Location Shoot</h3>
-                      <p>Capturing the perfect moment in natural lighting</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="gallery-item">
-                <div className="image-container">
-                  <img src={photo3} alt="Production scene 2" />
-                  <div className="image-overlay">
-                    <div className="image-caption">
-                      <h3>Camera Setup</h3>
-                      <p>Professional equipment for premium quality</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="gallery-item vertical">
-                <div className="image-container">
-                  <img src={photo4} alt="Production scene 3" />
-                  <div className="image-overlay">
-                    <div className="image-caption">
-                      <h3>Director's View</h3>
-                      <p>Creating the perfect composition</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="gallery-item">
-                <div className="image-container">
-                  <img src={photo5} alt="Production scene 4" />
-                  <div className="image-overlay">
-                    <div className="image-caption">
-                      <h3>Lighting Setup</h3>
-                      <p>Crafting the perfect ambiance</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="gallery-item wide">
-                <div className="image-container">
-                  <img src={photo6} alt="Production scene 5" />
-                  <div className="image-overlay">
-                    <div className="image-caption">
-                      <h3>Production Team</h3>
-                      <p>Collaboration brings vision to life</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="gallery-decorative-element left"></div>
-            <div className="gallery-decorative-element right"></div>
-          </div>
-        </div> */}
       </section>
       
       {/* Contact Section */}
@@ -821,8 +750,9 @@ function App() {
                 </a> */}
               </div>
             </div>
+
             <div className="contact-form">
-              <form>
+              <form   action="https://formsubmit.co/help.swiftdevagency@gmail.com" method="POST">
                 <div className="form-group">
                   <input type="text" id="name" name="name" placeholder="Your Name" required />
                 </div>
@@ -838,6 +768,7 @@ function App() {
                 <button type="submit" className="btn">Send Message</button>
               </form>
             </div>
+            
           </div>
         </div>
       </section>
