@@ -10,8 +10,16 @@ import photo1 from './assets/486827349_1002798388234163_4059944686867970730_n.jp
 import photo2 from './assets/491274945_676067771833559_7066320896018580383_n.jpg';
 import photo3 from './assets/490496008_1003695761896568_8322410131066097011_n.jpg';
 import photo4 from './assets/484226484_9397591200362708_8792654812032031085_n.jpg';
+
+
 import photo5 from './assets/490992256_675718622079740_9167887760017629774_n.jpg';
 import photo6 from './assets/490980769_1450302986380255_7120733704553065967_n.jpg';
+
+import photo7 from './assets/IMG_9971.jpeg';
+
+import photo8 from './assets/IMG_9974.jpeg';
+
+import photo9 from './assets/D0B4711B-106D-4A18-B1F4-80370434410A.jpeg';
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -481,7 +489,10 @@ function App() {
               </div>
               <div className="gallery-item vertical">
                 <div className="image-container">
-                  <img src={photo4} alt="Production scene 3" />
+
+
+                  {/* photo4 */}
+                  <img src={photo7} alt="Production scene 3" />
                   <div className="image-overlay">
                     <div className="image-caption">
                       <h3>Director's View</h3>
